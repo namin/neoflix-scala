@@ -10,7 +10,7 @@ import org.neo4j.rest.graphdb.RestGraphDatabase
 
 object Application extends Controller {
   val gds: GraphDatabaseService = new RestGraphDatabase(
-    System.getenv("NEO4J_REST_URL"), System.getenv("NEO4J_LOGIN"), System.getenv("NEO4J_PASSWORD"))
+    Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data"), System.getenv("NEO4J_LOGIN"), System.getenv("NEO4J_PASSWORD"))
   val me = gds.getReferenceNode()
   if (!me.hasProperty("name")) {
     me.setProperty("name", "I")
