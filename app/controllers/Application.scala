@@ -63,7 +63,7 @@ object Application extends Controller {
   def create_graph(): Unit = {
     println("Starting...")
 
-    if (gremlinExec("g.idx('vertices')[[type:'Movie']].count();").as[Int] > 0) {
+    if (gremlinExec("g.idx('vertices') != null && g.idx('vertices')[[type:'Movie']].count() > 0").as[String] == "true") {
       println("Graph already exists.")
       return
     }
