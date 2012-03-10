@@ -68,16 +68,16 @@ object Application extends Controller {
         filter{it != v}.
         groupCount(m){"${it.id}:${it.title.replaceAll(',',' ')}"}.iterate();
         
-        m.sort{a,b -> b.value <=> a.value}[0..9];
+        m.sort{a,b -> b.value <=> a.value}[0..14];
     """, JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
       val recs = r.as[String]
       JsArray(Array(JsObject(Seq(
-          "id" -> JsString(id.toString),
+          "id" -> JsInteger(id),
           "name" -> JsString(if (recs == "{}") "No Recommendations" else "Recommendations"),
-          "values" -> JsArray(if (recs == "{}") Array(JsObject(Seq("id" -> JsString(id.toString), "name" -> JsString("No Recommendations"))))
+          "values" -> JsArray(if (recs == "{}") Array(JsObject(Seq("id" -> JsInteger(id), "name" -> JsString("No Recommendations"))))
               else recs.drop(1).dropRight(1).split(",").map({v: String =>
             	val (a, b) = v.splitAt(v.indexOf(":"))
-            	JsObject(Seq("id" -> JsString(a.trim), "name" -> JsString(b.drop(1))))
+            	JsObject(Seq("id" -> JsInteger(a.trim.toInt), "name" -> JsString(b.drop(1))))
       }))))))})
   }
     
@@ -114,9 +114,6 @@ object Application extends Controller {
   }}
   
   def resources_show = Action { request =>
-    //response.headers['Cache-Control'] = 'public, max-age=2592000'
-    //content_type :json
-
     val pid = request.queryString("id").head
     val (id: Int, title: String) = try {
       val id = pid.toInt
@@ -134,7 +131,8 @@ object Application extends Controller {
     			"data" -> JsObject(Seq(
     			    "attributes" -> recs,
     			    "name" -> JsString(title),
-    			    "id" -> JsString(id.toString))))))
+    			    "id" -> JsInteger(id)))))).
+        withHeaders(("Cache-Control", "public, max-age=2592000"))
     }}}}
   }
   
