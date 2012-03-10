@@ -92,6 +92,16 @@ object Application extends Controller {
     get_poster(request.queryString("title").head).map(Ok(_))
   }}
   
+  def get_title(id: Int) = {
+    gremlin(
+        "g.v(node_id).title",
+        JsObject(Seq("node_id" -> JsNumber(id)))).map(_.as[String])
+  }
+  
+  def title(id: Int) = Action { AsyncResult {
+    get_title(id).map(Ok(_))
+  }}
+
   def index = Action {
     Ok(views.html.index())
   }
