@@ -14,7 +14,7 @@ import play.api.templates.Html
 case class Movie(url: String, posterUrl: String, tagline: String, rating: Double, overview: String)
 
 object Application extends Controller {
-  val logger = LoggerFactory.getLogger("controllers.Application");
+  val logger = LoggerFactory.getLogger("controllers.Application")
 
   val neo4jUrl = Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data")
   val neo4jLogin = System.getenv("NEO4J_LOGIN")
@@ -29,7 +29,7 @@ object Application extends Controller {
     post(JsObject(Seq(
         "script" -> JsString(script),
         "params" -> params
-    ))) map { response => response.json }
+    ))) map { _.json }
   }
 
  implicit object MovieFormat extends Reads[Movie] {
@@ -109,8 +109,32 @@ object Application extends Controller {
     get_id_from_title(request.queryString("title").head).map({id:Int => Ok(id.toString())})
   }}
   
-  def index = Action {
-    Ok(views.html.index())
+  def resources_show = Action { request =>
+    //response.headers['Cache-Control'] = 'public, max-age=2592000'
+    //content_type :json
+
+    val pid = request.queryString("id").head
+    val (id: Int, title: String) = try {
+      val id = pid.toInt
+      (id, get_title(id).value.get)
+    } catch {
+      case e : NumberFormatException =>
+        (get_id_from_title(pid).value.get, pid)
+    }
+    
+    AsyncResult { get_poster(title).map{poster => 
+      AsyncResult { get_recommendations(id).map{recs =>
+    	Ok(JsObject(Seq(
+    			"details_html" -> JsString(views.html.fullposter(title, poster).body),
+    			"data" -> JsObject(Seq(
+    			    "attributes" -> recs,
+    			    "name" -> JsString(title),
+    			    "id" -> JsNumber(id))))))
+    }}}}
+  }
+  
+  def index = Action { request =>
+    Ok(views.html.index(request.queryString.getOrElse("movies", Seq.empty)))
   }
   
 }
