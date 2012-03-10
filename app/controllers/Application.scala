@@ -6,13 +6,22 @@ import play.api.libs.ws.WS
 import play.api.libs.json._
 import play.api.libs.concurrent.Promise
 import org.slf4j.LoggerFactory
+import java.net.URLEncoder
+import play.api.libs.concurrent.Akka
+import play.api.Play.current
+
+case class Movie(url: String, posterUrl: String, tagline: String, rating: Double, overview: String)
 
 object Application extends Controller {
   val logger = LoggerFactory.getLogger("controllers.Application");
+
   val neo4jUrl = Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data")
   val neo4jLogin = System.getenv("NEO4J_LOGIN")
   val neo4jPassword = System.getenv("NEO4J_PASSWORD")
-  
+
+  val tmdbUrl = "http://api.themoviedb.org/3"
+  val tmdbKey = System.getenv("TMDB_KEY")
+
   def gremlin(script: String, params: JsObject = JsObject(Seq())) = {
     WS.url(neo4jUrl + "/ext/GremlinPlugin/graphdb/execute_script").
     withAuth(neo4jLogin, neo4jPassword, com.ning.http.client.Realm.AuthScheme.BASIC).
@@ -20,6 +29,28 @@ object Application extends Controller {
         "script" -> JsString(script),
         "params" -> params
     ))) map { response => response.json }
+  }
+
+ implicit object MovieFormat extends Reads[Movie] {
+    def reads(json: JsValue): Movie = Movie(
+      url = "http://www.themoviedb.org/movie/" + (json \ "id").as[Int],
+      posterUrl = "http://cf2.imgobject.com/t/p/w92/" + (json \ "poster_path").as[String],
+      tagline = (json \ "tagline").as[String],
+      rating = (json \ "vote_average").as[Double],
+      overview = (json \ "overview").as[String]
+    )
+  }
+  
+  def tmdb(title: String) = {
+    println(tmdbUrl + "/search/movie?api_key=" + tmdbKey + "&query=" + URLEncoder.encode(title, "UTF-8"))
+    WS.url(tmdbUrl + "/search/movie?api_key=" + tmdbKey + "&query=" + URLEncoder.encode(title, "UTF-8")).get flatMap { response =>
+      ((response.json \ "results")(0) \ "id").asOpt[Int] match { 
+        case None => Akka.future(None)
+        case Some(id) => 
+          println(tmdbUrl + "/movie/" + id + "?api_key=" + tmdbKey)
+          WS.url(tmdbUrl + "/movie/" + id + "?api_key=" + tmdbKey).get map { _.json.asOpt[Movie] }
+      }
+    }
   }
 
   def recommendations(id: Int) = Action {
@@ -47,6 +78,15 @@ object Application extends Controller {
             Seq("id" -> JsNumber(a.toInt), "name" -> JsString(b.drop(1)))
           })))))
     })}
+  }
+  
+  def get_poster(title: String) = AsyncResult {
+   tmdb(title) map { maybeMovie => Ok(views.html.poster(maybeMovie)) }
+  }
+  
+  def poster = Action { request =>
+    println(request.queryString("title").head)
+    get_poster(request.queryString("title").head)
   }
   
   def index = Action {
