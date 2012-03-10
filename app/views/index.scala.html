@@ -1,7 +1,19 @@
-@(message: String)
+@(result: Maybe[Array[String]])
 
-@main("Test: I love you") {
+@main("Movie Recommendations") {
     
-    @message
+    @result match {
+    	case Error(json) => {
+    		<p>There was an error: <pre>@json</pre></p>
+    	}
+    	case Just(titles) => {
+    		You might like the following movies:
+    		<ul>
+    			@for(title <- titles) {
+    	 			<li>@title</li>
+    			}
+    		</ul>
+    	}
+    }
     
 }

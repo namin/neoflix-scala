@@ -3,34 +3,43 @@ package controllers
 import play.api._
 import play.api.mvc._
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import org.neo4j.graphdb.DynamicRelationshipType
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.rest.graphdb.RestGraphDatabase
+import play.api.libs.ws.WS
+import play.api.libs.json._
+import play.api.libs.concurrent.Promise
 
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph
-import com.tinkerpop.gremlin.scala._
+sealed trait Maybe[+T]
+case class Error(json : JsValue) extends Maybe[Nothing]
+case class Just[T](t : T) extends Maybe[T]
 
 object Application extends Controller {
-  val gds: GraphDatabaseService = new RestGraphDatabase(
-    Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data"), System.getenv("NEO4J_LOGIN"), System.getenv("NEO4J_PASSWORD"))
-  val g = new Neo4jGraph(gds)
-  val me = gds.getReferenceNode()
-  if (!me.hasProperty("name")) {
-    me.setProperty("name", "I")
-    val you = gds.createNode()
-    you.setProperty("name", "you")
-    me.createRelationshipTo(you, DynamicRelationshipType.withName("love"))
+  val neo4jUrl = Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data")
+  val neo4jLogin = System.getenv("NEO4J_LOGIN")
+  val neo4jPassword = System.getenv("NEO4J_PASSWORD")
+  
+  def gremlin[T](script: String, params: JsObject = JsObject(Seq()))(implicit reads: Reads[T], manifest: Manifest[T]): Promise[Maybe[T]] = {
+    WS.url(neo4jUrl + "/ext/GremlinPlugin/graphdb/execute_script") post(JsObject(Seq(
+        "script" -> JsString(script),
+        "params" -> params
+    ))) map { response => response.json.asOpt[T] match {
+      case None => Error(response.json)
+      case Some(t) => Just(t)
+    }}
   }
 
+  def getRecommendations(id: Int) = {
+    gremlin[Array[String]]("""
+        Gremlin.defineStep('corated',[Vertex,Pipe], { def stars ->
+          _().inE('rated').filter{it.getProperty('stars') > stars}.outV.outE('rated').filter{it.getProperty('stars') > stars}.inV})
+        m = [:];
+        g.v(id).corated(3).title.groupCount(m).iterate();
+        m.sort{a,b -> b.value <=> a.value}[0..9].keySet()
+    """, JsObject(Seq("id" -> JsNumber(id))))
+  }
+  
   def index = Action {
-//    val me = gds.getNodeById(0)
-//    val rels = me.getRelationships(DynamicRelationshipType.withName("love"))
-//    val rel = rels.head
-//    val you = rel.getEndNode()
-//    val message = me.getProperty("name") + " " + rel.getType().name() + " " + you.getProperty("name")
-	val message = g.v(0).getProperty("name") + " " + g.v(0).outE.label.toIterable.head + " " + g.v(0).out.property("name").toIterable.head
-    Ok(views.html.index(message))
+    AsyncResult { getRecommendations(1) map { result =>
+      Ok(views.html.index(result))
+    }}
   }
   
 }
