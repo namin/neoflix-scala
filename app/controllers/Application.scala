@@ -63,14 +63,14 @@ object Application extends Controller {
   def create_graph(): Unit = {
     println("Starting...")
 
-    if (gremlinExec("g.idx('vertices') != null && g.idx('vertices')[[type:'Movie']].count() > 0").as[String] == "true") {
+    if (gremlinExec("g.idx('vertices')[[type:'Movie']].count()").asOpt[Int].getOrElse(0) > 0) {
       println("Graph already exists.")
       return
     }
 
-    if (gremlinExec("g.indices.count();").as[Int] == 0) {
+    if (gremlinExec("g.indices").as[Array[String]].isEmpty) {
       gremlin("g.createAutomaticIndex('vertices', Vertex.class, null);") 
-      if (gremlinExec("g.V.count();").as[Int] > 0)
+      if (gremlinExec("g.V.count()").asOpt[Int].getOrElse(0) > 0)
         gremlinExec("AutomaticIndexHelper.reIndexElements(g, g.idx('vertices'), g.V);")
     }
 
