@@ -1,4 +1,4 @@
-@(neoid: Seq[String])
+@(neo4jUrl: String)
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
@@ -105,13 +105,14 @@
           as shown on his blog entry
           <a href='http://markorodriguez.com/2011/09/22/a-graph-based-movie-recommender-engine'>A Graph-Based Movie Recommender Engine</a>
           with some tweaks as shown on
-          <a href='http://maxdemarzi.com/2012/01/10/a-graph-based-recommender-website'>A Graph-Based Movie Recommender Website</a>
+          <a href='http://maxdemarzi.com/2012/01/10/a-graph-based-recommender-website'>A Graph-Based Movie Recommender Website</a>.
+          This is <a href="http://github.com/namin/neoflix-scala">a Scala &amp; Play 2.0 port of Neoflix</a>.
         </p>
         <h3>Get started</h3>
         <p>
           Start using the browser by just typing in the id of an existing node.
           You can see the available nodes at
-          <a href='' target='_blank'>this Neo4j server</a>
+          <a href='@neo4jUrl' target='_blank'>this Neo4j server</a>
           , try loading
           <a href='/?neoid=1'>
             <b>Node 1</b>

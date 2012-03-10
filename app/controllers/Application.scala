@@ -17,7 +17,7 @@ case class Movie(url: String, posterUrl: String, tagline: String, rating: Double
 object Application extends Controller {
   val logger = LoggerFactory.getLogger("controllers.Application")
 
-  val neo4jUrl = Option.apply(System.getenv("NEO4J_REST_URL")).getOrElse("http://localhost:7474/db/data")
+  val neo4jUrl = Option.apply(System.getenv("NEO4J_URL")).getOrElse("http://localhost:7474")
   val neo4jLogin = System.getenv("NEO4J_LOGIN")
   val neo4jPassword = System.getenv("NEO4J_PASSWORD")
 
@@ -25,7 +25,7 @@ object Application extends Controller {
   val tmdbKey = System.getenv("TMDB_KEY")
 
   def gremlin(script: String, params: JsObject = JsObject(Seq())) = {
-    WS.url(neo4jUrl + "/ext/GremlinPlugin/graphdb/execute_script").
+    WS.url(neo4jUrl + "/db/data/ext/GremlinPlugin/graphdb/execute_script").
     withAuth(neo4jLogin, neo4jPassword, com.ning.http.client.Realm.AuthScheme.BASIC).
     post(JsObject(Seq(
         "script" -> JsString(script),
@@ -103,7 +103,6 @@ object Application extends Controller {
   }}
 
   def get_id_from_title(title: String) = {
-    println("looking for title : " + title)
     gremlin(
         "g.idx(Tokens.T.v)[[title:title]].next().id",
         JsObject(Seq("title" -> JsString(title)))).map(_.as[Int])
@@ -137,7 +136,7 @@ object Application extends Controller {
   }
   
   def index = Action { request =>
-    Ok(views.html.index(request.queryString.getOrElse("movies", Seq.empty)))
+    Ok(views.html.index(neo4jUrl))
   }
   
 }
