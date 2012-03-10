@@ -56,8 +56,9 @@ object Application extends Controller {
     gremlin(script).value.get
   }
   
-  def gremlinAsync(script: String) {
-    gremlin(script).await
+  def gremlinAsync(msg: String, script: String) {
+    gremlin(script).onRedeem(_ => ())
+    println(msg)
   }
   
   def create_graph(): Unit = {
@@ -74,7 +75,7 @@ object Application extends Controller {
         gremlinExec("AutomaticIndexHelper.reIndexElements(g, g.idx('vertices'), g.V);")
     }
 
-    gremlinAsync("""
+    gremlinAsync("Creating the graph is going to take some time, watch it on " + neo4jUrl, """
             g.setMaxBufferSize(1000);
 
             'http://neoflix.heroku.com/movies.dat'.toURL().eachLine { def line ->
@@ -110,8 +111,6 @@ object Application extends Controller {
              };
 
              g.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);""")
-
-    println("Creating the graph is going to take some time, watch it on " + neo4jUrl)
   }
 
   def get_recommendations(id: Int) = {
