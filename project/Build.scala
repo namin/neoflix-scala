@@ -4,7 +4,7 @@ import PlayProject._
 
 object ApplicationBuild extends Build {
 
-    val appName         = "neosample"
+    val appName         = "neoflix-scala"
     val appVersion      = "1.0-SNAPSHOT"
 
     val appDependencies = Seq(
