@@ -17,7 +17,9 @@ object Application extends Controller {
   val neo4jPassword = System.getenv("NEO4J_PASSWORD")
   
   def gremlin[T](script: String, params: JsObject = JsObject(Seq()))(implicit reads: Reads[T], manifest: Manifest[T]): Promise[Maybe[T]] = {
-    WS.url(neo4jUrl + "/ext/GremlinPlugin/graphdb/execute_script") post(JsObject(Seq(
+    WS.url(neo4jUrl + "/ext/GremlinPlugin/graphdb/execute_script").
+    withAuth(neo4jLogin, neo4jPassword, com.ning.http.client.Realm.AuthScheme.BASIC).
+    post(JsObject(Seq(
         "script" -> JsString(script),
         "params" -> params
     ))) map { response => response.json.asOpt[T] match {
