@@ -15,7 +15,6 @@ Deployment (Local):
   export TMDB_KEY=YOUR_TMDB_KEY     # See blog posts for how to get one.
   play console
     controllers.Application.create_graph()
-    exit
   play
     run
 
@@ -29,7 +28,6 @@ Deployment (Heroku):
   git push heroku master
   heroku run sbt play console
     controllers.Application.create_graph()
-    exit
 
 See Blog posts for more information:
 
