@@ -43,12 +43,10 @@ object Application extends Controller {
   }
   
   def tmdb(title: String) = {
-    println(tmdbUrl + "/search/movie?api_key=" + tmdbKey + "&query=" + URLEncoder.encode(title, "UTF-8"))
     WS.url(tmdbUrl + "/search/movie?api_key=" + tmdbKey + "&query=" + URLEncoder.encode(title, "UTF-8")).get flatMap { response =>
       ((response.json \ "results")(0) \ "id").asOpt[Int] match { 
         case None => Akka.future(None)
         case Some(id) => 
-          println(tmdbUrl + "/movie/" + id + "?api_key=" + tmdbKey)
           WS.url(tmdbUrl + "/movie/" + id + "?api_key=" + tmdbKey).get map { _.json.asOpt[Movie] }
       }
     }
@@ -88,7 +86,6 @@ object Application extends Controller {
     tmdb(title) map { maybeMovie => views.html.poster(maybeMovie) }
   
   def poster = Action { request => AsyncResult {
-    println(request.queryString("title").head)
     get_poster(request.queryString("title").head).map(Ok(_))
   }}
   
@@ -102,6 +99,16 @@ object Application extends Controller {
     get_title(id).map(Ok(_))
   }}
 
+  def get_id_from_title(title: String) = {
+    gremlin(
+        "g.idx(Tokens.T.v)[[title:title]].next().id",
+        JsObject(Seq("title" -> JsString(title)))).map(_.as[Int])
+  }
+  
+  def id_from_title = Action { request => AsyncResult {
+    get_id_from_title(request.queryString("title").head).map({id:Int => Ok(id.toString())})
+  }}
+  
   def index = Action {
     Ok(views.html.index())
   }
