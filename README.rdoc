@@ -1,0 +1,41 @@
+== Neoflix Movie Recommender
+
+A Scala & Play 2.0 port of https://github.com/maxdemarzi/neoflix.
+
+An implementation of a graph based movie recommender engine by Marko Rodriguez.
+
+http://markorodriguez.com/2011/09/22/a-graph-based-movie-recommender-engine
+
+Demo http://neoflix-scala.herokuapp.com
+
+Deployment (Local):
+
+  git clone git@github.com:namin/neoflix-scala.git
+  cd neoflix-scala
+  export TMDB_KEY=YOUR_TMDB_KEY     # See blog posts for how to get one.
+  play console
+    controllers.Application.create_graph()
+    exit
+  play
+    run
+
+Deployment (Heroku):
+
+  git clone git@github.com:namin/neoflix-scala.git
+  cd neoflix-scala
+  heroku apps:create neoflix-scala --stack cedar
+  heroku addons:add neo4j
+  heroku config:add TMDB_KEY=YOUR_TMDB_KEY  # See blog posts
+  git push heroku master
+  heroku run sbt play console
+    controllers.Application.create_graph()
+    exit
+
+See Blog posts for more information:
+
+http://maxdemarzi.com/2012/01/13/neo4j-on-heroku-part-one
+
+http://maxdemarzi.com/2012/01/16/neo4j-on-heroku-part-two
+
+http://maxdemarzi.com/2012/01/18/neo4j-on-heroku-part-three
+
