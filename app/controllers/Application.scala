@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import play.api.libs.concurrent.Akka
 import play.api.Play.current
+import play.api.templates.Html
 
 case class Movie(url: String, posterUrl: String, tagline: String, rating: Double, overview: String)
 
@@ -53,41 +54,43 @@ object Application extends Controller {
     }
   }
 
-  def recommendations(id: Int) = Action {
-    AsyncResult { gremlin("""
+  def get_recommendations(id: Int) = {
+    gremlin("""
         m = [:];
-    	v = g.v(node_id);
-
-    	v.
-    	inE('rated').
-    	filter{it.getProperty('stars') > 3}.
-    	outV.
-    	outE('rated').
-    	filter{it.getProperty('stars') > 3}.
-    	inV.
-    	filter{it != v}.
-    	groupCount(m){"${it.id}:${it.title}"}.iterate();
-
+        v = g.v(node_id);
+        
+        v.
+        inE('rated').
+        filter{it.getProperty('stars') > 3}.
+        outV.
+        outE('rated').
+        filter{it.getProperty('stars') > 3}.
+        inV.
+        filter{it != v}.
+        groupCount(m){"${it.id}:${it.title}"}.iterate();
+        
         m.sort{a,b -> b.value <=> a.value}[0..9].keySet();
     """, JsObject(Seq("node_id" -> JsNumber(id)))).map({ recs =>
-      Ok(JsObject(Seq(
+      JsObject(Seq(
           "id" -> JsNumber(id),
           "name" -> JsString(if (recs.toString == "[]") "No Recommendations" else "Recommendations"),
           "value" -> JsObject(recs.as[Array[String]].flatMap({v: String =>
             val (a, b) = v.splitAt(v.indexOf(":"))
             Seq("id" -> JsNumber(a.toInt), "name" -> JsString(b.drop(1)))
-          })))))
-    })}
+      }))))})
   }
+    
+  def recommendations(id: Int) = Action { AsyncResult {
+    get_recommendations(id).map(Ok(_))
+  }}
+
+  def get_poster(title: String): Promise[Html] =
+    tmdb(title) map { maybeMovie => views.html.poster(maybeMovie) }
   
-  def get_poster(title: String) = AsyncResult {
-   tmdb(title) map { maybeMovie => Ok(views.html.poster(maybeMovie)) }
-  }
-  
-  def poster = Action { request =>
+  def poster = Action { request => AsyncResult {
     println(request.queryString("title").head)
-    get_poster(request.queryString("title").head)
-  }
+    get_poster(request.queryString("title").head).map(Ok(_))
+  }}
   
   def index = Action {
     Ok(views.html.index())
