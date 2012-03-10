@@ -116,9 +116,13 @@ object Application extends Controller {
   def get_recommendations(id: Int) = {
     gremlin("""
         m = [:];
+        x = [] as Set;
         v = g.v(node_id);
-        
+
         v.
+        out('hasGenera').
+        aggregate(x).
+        back(2).
         inE('rated').
         filter{it.getProperty('stars') > 3}.
         outV.
@@ -126,10 +130,11 @@ object Application extends Controller {
         filter{it.getProperty('stars') > 3}.
         inV.
         filter{it != v}.
+        filter{it.out('hasGenera').toSet().equals(x)}.
         groupCount(m){"${it.id}:${it.title.replaceAll(',',' ')}"}.iterate();
-        
-        m.sort{a,b -> b.value <=> a.value}[0..14];
-    """, JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
+ 
+        m.sort{a,b -> b.value <=> a.value}[0..24];""",
+        JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
       val recs = r.as[String] // we don't get a JSON object back for a Groovy map :-(
       JsArray(Array(JsObject(Seq(
           "id" -> JsInteger(id),
