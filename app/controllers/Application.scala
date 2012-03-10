@@ -66,17 +66,19 @@ object Application extends Controller {
         filter{it.getProperty('stars') > 3}.
         inV.
         filter{it != v}.
-        groupCount(m){"${it.id}:${it.title}"}.iterate();
+        groupCount(m){"${it.id}:${it.title.replaceAll(',',' ')}"}.iterate();
         
-        m.sort{a,b -> b.value <=> a.value}[0..9].keySet();
-    """, JsObject(Seq("node_id" -> JsNumber(id)))).map({ recs =>
-      JsObject(Seq(
-          "id" -> JsNumber(id),
-          "name" -> JsString(if (recs.toString == "[]") "No Recommendations" else "Recommendations"),
-          "value" -> JsObject(recs.as[Array[String]].flatMap({v: String =>
-            val (a, b) = v.splitAt(v.indexOf(":"))
-            Seq("id" -> JsNumber(a.toInt), "name" -> JsString(b.drop(1)))
-      }))))})
+        m.sort{a,b -> b.value <=> a.value}[0..9];
+    """, JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
+      val recs = r.as[String]
+      JsArray(Array(JsObject(Seq(
+          "id" -> JsString(id.toString),
+          "name" -> JsString(if (recs == "{}") "No Recommendations" else "Recommendations"),
+          "values" -> JsArray(if (recs == "{}") Array(JsObject(Seq("id" -> JsString(id.toString), "name" -> JsString("No Recommendations"))))
+              else recs.drop(1).dropRight(1).split(",").map({v: String =>
+            	val (a, b) = v.splitAt(v.indexOf(":"))
+            	JsObject(Seq("id" -> JsString(a.trim), "name" -> JsString(b.drop(1))))
+      }))))))})
   }
     
   def recommendations(id: Int) = Action { AsyncResult {
@@ -93,7 +95,7 @@ object Application extends Controller {
   def get_title(id: Int) = {
     gremlin(
         "g.v(node_id).title",
-        JsObject(Seq("node_id" -> JsNumber(id)))).map(_.as[String])
+        JsObject(Seq("node_id" -> JsInteger(id)))).map(_.as[String])
   }
   
   def title(id: Int) = Action { AsyncResult {
@@ -132,7 +134,7 @@ object Application extends Controller {
     			"data" -> JsObject(Seq(
     			    "attributes" -> recs,
     			    "name" -> JsString(title),
-    			    "id" -> JsNumber(id))))))
+    			    "id" -> JsString(id.toString))))))
     }}}}
   }
   
