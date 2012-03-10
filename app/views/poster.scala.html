@@ -1,0 +1,10 @@
+@(maybeMovie: Option[Movie])
+
+@maybeMovie match {
+	case None => {
+		No Movie Poster found
+    }
+	case Some(movie) => {
+      <a href="@movie.url" target='_blank'><img src="@movie.posterUrl"></a><h3>@movie.tagline</h3><p>Rating: @movie.rating</p><p>@movie.overview</p>
+    }
+ }

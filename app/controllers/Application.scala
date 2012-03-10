@@ -7,6 +7,7 @@ import play.api.libs.json._
 import play.api.libs.concurrent.Promise
 import org.slf4j.LoggerFactory
 import java.net.URLEncoder
+import java.net.URLDecoder
 import play.api.libs.concurrent.Akka
 import play.api.Play.current
 import play.api.templates.Html
@@ -100,6 +101,7 @@ object Application extends Controller {
   }}
 
   def get_id_from_title(title: String) = {
+    println("looking for title : " + title)
     gremlin(
         "g.idx(Tokens.T.v)[[title:title]].next().id",
         JsObject(Seq("title" -> JsString(title)))).map(_.as[Int])
@@ -119,7 +121,8 @@ object Application extends Controller {
       (id, get_title(id).value.get)
     } catch {
       case e : NumberFormatException =>
-        (get_id_from_title(pid).value.get, pid)
+        val title = URLDecoder.decode(pid, "UTF-8")
+        (get_id_from_title(title).value.get, title)
     }
     
     AsyncResult { get_poster(title).map{poster => 

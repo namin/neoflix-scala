@@ -1,4 +1,153 @@
 @(neoid: Seq[String])
-@main("Movie Recommendations") {    
-    
-}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <link href='/assets/css/jquery-ui.css' rel='stylesheet' />
+    <link href='/assets/css/global.css' rel='stylesheet' />
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+    <script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js'></script>
+    <script src='/assets/js/ui.js'></script>
+    <script src='/assets/js/processing.min.js'></script>
+    <script src='/assets/js/movies.js'></script>
+    <title>Neoflix</title>
+  </head>
+  <body>
+    <canvas id='neoviz'></canvas>
+    <header>
+      <section id='title'>
+        <h1>Neoflix</h1>
+        <p>Movie Recommender</p>
+      </section>
+      <section id='search'>
+        <form action='/' method='get'>
+          <div class='ui-widget'>
+            <label>Movie:</label>
+            <input id='movies' name='id' />
+            <input class='button' id='loadnode' type='submit' value='Load' />
+          </div>
+        </form>
+      </section>
+      <br style='clear: both;' />
+    </header>
+    <section id='content'>
+      <script type='text/javascript'>
+        //<![CDATA[
+          var canvas = document.getElementById("neoviz");
+          
+          var myGraph; // a reference to the graph to make it available to the outside world
+          
+          var p = Processing(canvas); 
+          
+          function loadvisualization() {
+            var vizid = document.getElementById("vizid").value 
+            if ( vizid != "") {
+              p.resourceId = vizid; 
+            } else {
+              p.resourceId = window.location.search.substring(1).split("=")[1];
+            }
+            p.resourceId = vizid;
+            p.setup();
+          
+            $("#path li").remove();
+          
+          };
+          
+          $(function() {
+            function canvasSupported() {
+              var canvas_compatible = false;
+              try {
+               canvas_compatible = !!(document.createElement('canvas').getContext('2d')); // S60
+              } catch(e) {
+               canvas_compatible = !!(document.createElement('canvas').getContext); // IE
+              }
+              return canvas_compatible;
+            }
+          
+            if (canvasSupported()) {
+          
+              var initialized = false;
+                
+              // init
+              var vizid =  window.location.search.substring(1).split("=")[1];
+              if (vizid) {
+                p.resourceId = vizid;
+              } else {
+                p.resourceId = "1";
+              }
+          
+              p.init(p.ajax("/assets/js/pjs/physics.pjs")+p.ajax("/assets/js/pjs/donut.pjs")+p.ajax("/assets/js/pjs/resource.pjs")+p.ajax("/assets/js/pjs/node.pjs")+p.ajax("/assets/js/pjs/edge.pjs")+p.ajax("/assets/js/pjs/graph.pjs")+p.ajax("/assets/js/pjs/network.pjs"));
+              initialized = true;
+              
+              $(window).resize(function(){
+                p.resize();
+                Attributes.adjustHeight();
+              });
+            } else {
+              $('#browser_not_supported').show();
+              $('#explanation').hide();
+            }
+          });
+        //]]>
+      </script>
+    </section>
+    <aside>
+      <div id='explanation'>
+        <!-- Neoflix introduction -->
+        <h2>About</h2>
+        <p>
+          Neoflix is an example app using the
+          <a href='https://github.com/maxdemarzi/neovigator' target='_blank'>Neovigator</a>
+          visualization.  It uses the
+          <a href='http://www.grouplens.org/node/73'>Movie Lens</a>
+          dataset and the work of
+          <a href='https://twitter.com/twarko'>Marko A. Rodriguez</a>
+          as shown on his blog entry
+          <a href='http://markorodriguez.com/2011/09/22/a-graph-based-movie-recommender-engine'>A Graph-Based Movie Recommender Engine</a>
+          with some tweaks as shown on
+          <a href='http://maxdemarzi.com/2012/01/10/a-graph-based-recommender-website'>A Graph-Based Movie Recommender Website</a>
+        </p>
+        <h3>Get started</h3>
+        <p>
+          Start using the browser by just typing in the id of an existing node.
+          You can see the available nodes at
+          <a href='' target='_blank'>this Neo4j server</a>
+          , try loading
+          <a href='/?neoid=1'>
+            <b>Node 1</b>
+          </a>
+          to get started.
+        </p>
+        <h3>Quirks</h3>
+        <p>
+          There may be some unexpected behavior. Performance may drop significantly as
+          the number of nodes increases.
+        </p>
+        <h3>Credits</h3>
+        <p>
+          This project was made by
+          <a href='http://maxdemarzi.com'>Max De Marzi</a>
+          using:
+          <a href='http://neo4j.org' target='_blank'>Neo4j</a>
+          and
+          <a href='https://github.com/maxdemarzi/neography' target='_blank'>Neography</a>
+          , it is based on
+          <a href='http://askken.heroku.com/' target='_blank'>Ask Ken</a>
+          created by
+          <a href='http://twitter.com/_mql' target='_blank'>Michael Aufreiter</a>
+        </p>
+        <h3>Code</h3>
+        <p>
+          Available at
+          <a href='https://github.com/maxdemarzi/neoflix' target='_blank'>Github</a>
+        </p>
+      </div>
+      <div id="browser_not_supported">
+      Your Browser is currently not supported.<br/><br/>Try one of these:<br/>
+      <a href="http://www.mozilla.com/en-US/firefox/firefox.html">Firefox 3.6</a><br/>
+      <a href="http://www.apple.com/safari/">Safari 4.0</a><br/>
+      <a href="http://www.google.com/chrome/">Chrome</a><br/>
+      </div>
+    </aside>
+  </body>
+</html>
