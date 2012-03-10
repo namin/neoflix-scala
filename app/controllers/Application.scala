@@ -2,21 +2,20 @@ package controllers
 
 import play.api._
 import play.api.mvc._
+
 import play.api.libs.ws.WS
 import play.api.libs.json._
 import play.api.libs.concurrent.Promise
-import org.slf4j.LoggerFactory
+import play.api.libs.concurrent.Akka
+import play.api.templates.Html
+import play.api.Play.current
+
 import java.net.URLEncoder
 import java.net.URLDecoder
-import play.api.libs.concurrent.Akka
-import play.api.Play.current
-import play.api.templates.Html
 
 case class Movie(url: String, posterUrl: String, tagline: String, rating: Double, overview: String)
 
 object Application extends Controller {
-  val logger = LoggerFactory.getLogger("controllers.Application")
-
   val neo4jUrl = Option.apply(System.getenv("NEO4J_URL")).getOrElse("http://localhost:7474")
   val neo4jLogin = System.getenv("NEO4J_LOGIN")
   val neo4jPassword = System.getenv("NEO4J_PASSWORD")
@@ -70,7 +69,7 @@ object Application extends Controller {
         
         m.sort{a,b -> b.value <=> a.value}[0..14];
     """, JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
-      val recs = r.as[String]
+      val recs = r.as[String] // we don't get a JSON object back for a Groovy map :-(
       JsArray(Array(JsObject(Seq(
           "id" -> JsInteger(id),
           "name" -> JsString(if (recs == "{}") "No Recommendations" else "Recommendations"),
