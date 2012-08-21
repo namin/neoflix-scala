@@ -135,15 +135,15 @@ object Application extends Controller {
  
         m.sort{a,b -> b.value <=> a.value}[0..24];""",
         JsObject(Seq("node_id" -> JsInteger(id)))).map({ r =>
-      val recs = r.as[String] // we don't get a JSON object back for a Groovy map :-(
+      val recs = r.as[Map[String,Int]]
       JsArray(Array(JsObject(Seq(
           "id" -> JsInteger(id),
-          "name" -> JsString(if (recs == "{}") "No Recommendations" else "Recommendations"),
-          "values" -> JsArray(if (recs == "{}") Array(JsObject(Seq("id" -> JsInteger(id), "name" -> JsString("No Recommendations"))))
-              else recs.drop(1).dropRight(1).split(",").map({v: String =>
+          "name" -> JsString(if (recs.isEmpty) "No Recommendations" else "Recommendations"),
+          "values" -> JsArray(if (recs.isEmpty) Array(JsObject(Seq("id" -> JsInteger(id), "name" -> JsString("No Recommendations"))))
+              else recs.map({case (v, _) =>
             	val (a, b) = v.splitAt(v.indexOf(":"))
             	JsObject(Seq("id" -> JsInteger(a.trim.toInt), "name" -> JsString(b.drop(1))))
-      }))))))})
+      }).toSeq)))))})
   }
     
   def recommendations(id: Int) = Action { AsyncResult {
